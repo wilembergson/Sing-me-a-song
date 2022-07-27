@@ -5,6 +5,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "prisma-test": "dotenv -e .env.test prisma migrate reset --skip-seed",
     "test": "NODE_OPTIONS=--experimental-vm-modules dotenv -e .env.test jest -i",
     "dev": "nodemon src/server.ts"
   },
@@ -30,6 +31,7 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "@faker-js/faker": "^7.3.0",
     "@prisma/client": "^3.13.0",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
