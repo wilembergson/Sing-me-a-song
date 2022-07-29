@@ -9,14 +9,28 @@ export async function createRecommendation(){
   return recommendation
 }
 
-async function createDataRecommendation(){
+export async function createDataRecommendation(){
   const data = await prisma.recommendation.create({
     data: {
       name:faker.name.findName(),
-    youtubeLink:"https://www.youtube.com/watch?v=-SIjTlOJUkI&ab_channel=TarcisiodoAcordeon"
+      youtubeLink:"https://www.youtube.com/watch?v=-SIjTlOJUkI&ab_channel=TarcisiodoAcordeon"
     }
   });
   return data
+}
+
+export async function create10Recommendations(){
+  for(let i=0; i<10; i++){
+    await createDataRecommendation()
+  }
+}
+
+export async function orderedRecommendations(){
+  await create10Recommendations()
+  const recommendations = await prisma.recommendation.findMany()
+  recommendations.sort((a,b)=> b.score - a.score)
+  console.log(recommendations)
+  return recommendations
 }
 
 export async function createRecommendationWithoutLink(){
@@ -62,6 +76,7 @@ export async function lessFiveRecomendation(){
   });
   return recommendation.id
 }
+
 export async function findById(id:number){
   const result = await prisma.recommendation.findFirst({
     where:{

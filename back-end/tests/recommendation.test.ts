@@ -1,10 +1,11 @@
 import { faker } from "@faker-js/faker"
+import { prisma } from "@prisma/client"
 import supertest from "supertest"
 
 import app from "../src/app.js"
-import { createRecommendation, createRecommendationWithoutLink, createRecommendationWithoutName, createRecommendationWithoutYoutubeLink, deleteAll, findById, getExistingRecommendation, lessFiveRecomendation } from "./factories/recommendationFactory.js"
+import { create10Recommendations, createDataRecommendation, createRecommendation, createRecommendationWithoutLink, createRecommendationWithoutName, createRecommendationWithoutYoutubeLink, deleteAll, findById, getExistingRecommendation, lessFiveRecomendation, orderedRecommendations } from "./factories/recommendationFactory.js"
 const agent = supertest(app)
-describe("POST /recommendations", () => {
+describe("/recommendations", () => {
     beforeEach(async ()=>{
         await deleteAll()
     })
@@ -38,6 +39,54 @@ describe("POST /recommendations", () => {
         const recommendation = await createRecommendationWithoutYoutubeLink()
         const response = await agent.post('/recommendations').send(recommendation);
         expect(response.status).toBe(422);
+    });
+    it("Retorna lista das ultimas 10 recomendações - deve retornar 200", async () => {
+        await create10Recommendations()
+        const response = await agent.get('/recommendations')
+        const list = response.body
+        expect(list.length).toBe(10)
+        expect(list[0]).toHaveProperty('id')
+        expect(list[0]).toHaveProperty('name')
+        expect(list[0]).toHaveProperty('youtubeLink')
+        expect(list[0]).toHaveProperty('score')
+        expect(response.status).toBe(200);
+    });
+})
+
+describe("GET /recommendations/:id", () => {
+    beforeEach(async ()=>{
+        await deleteAll()
+    })
+    it("Retorna a recomendação referente ao ID informado - deve retornar 200", async () => {
+        const recommendation = await createDataRecommendation()
+        const id = recommendation.id
+        const response = await agent.get(`/recommendations/${id}`)
+        expect(response.body).toHaveProperty('id')
+        expect(response.body).toHaveProperty('name')
+        expect(response.body).toHaveProperty('youtubeLink')
+        expect(response.body).toHaveProperty('score')
+        expect(response.status).toBe(200);
+    });
+    it("Retorna status 404 ao não encontrar recomendação referente ao ID informado - deve retornar 404", async () => {
+        const id = faker.datatype.number()
+        const response = await agent.get(`/recommendations/${id}`)
+        expect(response.status).toBe(404);
+    });
+})
+
+describe("GET /recommendations/top/:amount", () => {
+    beforeEach(async ()=>{
+        await deleteAll()
+    })
+    it("Retorna as recomendações por ordem de crescente de score - deve retornar 200", async () => {
+        const recommendations = await orderedRecommendations()
+        const response = await agent.get(`/recommendations/top/${recommendations.length}`)
+        expect(response.body).toHaveProperty("length")
+        expect(response.body[0]).toHaveProperty('id')
+        expect(response.body[0]).toHaveProperty('name')
+        expect(response.body[0]).toHaveProperty('youtubeLink')
+        expect(response.body[0]).toHaveProperty('score')
+        expect(response.status).toBe(200);
     });
 })
 
