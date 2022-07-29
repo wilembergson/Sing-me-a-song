@@ -1,10 +1,11 @@
 import { faker } from "@faker-js/faker"
-import { prisma } from "@prisma/client"
 import supertest from "supertest"
 
 import app from "../src/app.js"
 import { create10Recommendations, createDataRecommendation, createRecommendation, createRecommendationWithoutLink, createRecommendationWithoutName, createRecommendationWithoutYoutubeLink, deleteAll, findById, getExistingRecommendation, lessFiveRecomendation, orderedRecommendations } from "./factories/recommendationFactory.js"
+
 const agent = supertest(app)
+
 describe("/recommendations", () => {
     beforeEach(async ()=>{
         await deleteAll()
@@ -70,6 +71,22 @@ describe("GET /recommendations/:id", () => {
     it("Retorna status 404 ao não encontrar recomendação referente ao ID informado - deve retornar 404", async () => {
         const id = faker.datatype.number()
         const response = await agent.get(`/recommendations/${id}`)
+        expect(response.status).toBe(404);
+    });
+})
+
+describe("GET /recommendations/random", () => {
+    beforeEach(async ()=>{
+        await deleteAll()
+    })
+    it("Retorna recomendação aleatória - deve retornar 200", async () => {
+        await create10Recommendations()
+        const response = await agent.get(`/recommendations/random`)
+        expect(response.body).toHaveProperty("id")
+        expect(response.status).toBe(200);
+    });
+    it("Retorna status 404 ao não encontrar nenhuma recomendação cadastrada - deve retornar 404", async () => {
+        const response = await agent.get(`/recommendations/random`)
         expect(response.status).toBe(404);
     });
 })
