@@ -46,6 +46,10 @@ describe("Inserção de recomendação", () => {
 })
 
 describe("Modificar o score", () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        jest.resetAllMocks();
+    });
     it("Aumenta o score", async () => {
         const recommendation:Recommendation = await recommendationExemple()
         
@@ -58,7 +62,7 @@ describe("Modificar o score", () => {
         expect(recommendationRepository.updateScore).toBeCalled()
     })
 
-    it("Não Aumenta o score", async () => {
+    it("Não permite Aumentar o score", async () => {
         const id = faker.datatype.number()
         jest.spyOn(recommendationRepository, "find").mockImplementationOnce(():any => {
             return null
@@ -69,7 +73,7 @@ describe("Modificar o score", () => {
         expect(recommendationRepository.find).toBeCalled()
     })
 
-    /*it('Deve reduzir um ponto do score (>-5)', async () => {
+    it('Deve reduzir um ponto do score', async () => {
         const recommendation:Recommendation = await recommendationExemple()
         jest.spyOn(recommendationRepository, 'find').mockImplementationOnce((): any => { return recommendation});
         jest.spyOn(recommendationRepository, "updateScore").mockImplementationOnce((): any => {return recommendation});
@@ -78,7 +82,26 @@ describe("Modificar o score", () => {
         await recommendationService.downvote(recommendation.id);
         expect(recommendationRepository.updateScore).toHaveBeenCalled();
         expect(recommendationRepository.remove).not.toHaveBeenCalled();
-    })*/
+    })
+
+    it('Deve deletar a recomendação caso o score fique abaixo de -5', async () => {
+        const recommendation:Recommendation = await recommendationExemple()
+        const rec = {...recommendation, score: -6}
+        jest.spyOn(recommendationRepository, 'find').mockImplementationOnce((): any => { return rec});
+        jest.spyOn(recommendationRepository, "updateScore").mockImplementationOnce((): any => {return rec});
+        jest.spyOn(recommendationRepository, "remove").mockImplementationOnce((): any => { });
+
+        await recommendationService.downvote(rec.id);
+        expect(recommendationRepository.updateScore).toHaveBeenCalled();
+        expect(recommendationRepository.remove).toHaveBeenCalled();
+    })
+    it('Apresenta o erro not_found quando a recomendação não está cadastrada', async () => {
+        jest.spyOn(recommendationRepository, 'find').mockImplementationOnce((): any => {
+            return null;
+        });
+        const promise = recommendationService.downvote(faker.datatype.number());
+        expect(promise).rejects.toEqual(notFoundError());
+    });
 })
 
 describe('Obter recomendações', () => {
