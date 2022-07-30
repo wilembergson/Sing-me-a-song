@@ -1,6 +1,14 @@
 import { faker } from "@faker-js/faker";
 import { Recommendation } from "@prisma/client";
 
+export async function recommendationData(){
+    const recommendation ={
+        name: faker.music.songName(),
+        youtubeLink: "https://www.youtube.com/watch?v=RF3NHe2dTIA&t=5s&ab_channel=Andr%C3%A9Pompeu" 
+    }
+    return recommendation
+}
+
 export async function recommendationExemple(){
     const recommendation ={
         id:faker.datatype.number(),

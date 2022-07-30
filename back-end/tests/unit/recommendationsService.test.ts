@@ -6,7 +6,7 @@ import { prisma } from "../../src/database.js"
 import { recommendationRepository }  from "../../src/repositories/recommendationRepository.js"
 import { CreateRecommendationData, recommendationService } from "../../src/services/recommendationsService.js"
 import { notFoundError } from "../../src/utils/errorUtils.js"
-import { listOfRecommendations, recommendationExemple, listWithScoreGreaterThan10, listWithScoreBetweenNegative5And10 } from "./factories/recommendationsFactory.js"
+import { recommendationData, listOfRecommendations, recommendationExemple, listWithScoreGreaterThan10, listWithScoreBetweenNegative5And10 } from "./factories/recommendationsFactory.js"
 
 jest.mock("../../src/repositories/recommendationRepository")
 
@@ -21,19 +21,13 @@ describe("Inserção de recomendação", () => {
     it("Insere uma nova recomendação", async () => {
         jest.spyOn(recommendationRepository, "create").mockImplementationOnce(():any =>{})
         jest.spyOn(recommendationRepository, "findByName").mockImplementationOnce(():any =>{})
-
-        await recommendationService.insert({
-            name: faker.fake.name,
-            youtubeLink: "https://www.youtube.com/watch?v=RF3NHe2dTIA&t=5s&ab_channel=Andr%C3%A9Pompeu"
-        })
+        const recommendation = await recommendationData()
+        await recommendationService.insert(recommendation)
         expect(recommendationRepository.findByName).toBeCalled()
     })
 
     it("Não insere recomendação com nome já cadastrado", async () => {
-        const recommendation: CreateRecommendationData = {
-            name: faker.fake.name,
-            youtubeLink: "https://www.youtube.com/watch?v=RF3NHe2dTIA&t=5s&ab_channel=Andr%C3%A9Pompeu"
-        }
+        const recommendation = await recommendationData()
         jest.spyOn(recommendationRepository, "findByName").mockImplementationOnce(():any => {
             return {
                 name: recommendation.name,
@@ -52,7 +46,6 @@ describe("Modificar o score", () => {
     });
     it("Aumenta o score", async () => {
         const recommendation:Recommendation = await recommendationExemple()
-        
         jest.spyOn(recommendationRepository, "find").mockImplementationOnce(():any => {
             return recommendation
         })
@@ -208,12 +201,10 @@ describe('Obtem recomendações todas com score>10 ou todas com score<=10', () =
     })
     it ('Retorna recomendação com score > 10', async () => {
         const recommendations = await listWithScoreGreaterThan10()
-        console.log(recommendations)
         jest.spyOn(recommendationRepository, "findAll").mockImplementation((): any => { 
             return recommendations;
         });
         const result = await recommendationService.getRandom();
-        console.log(result)
         const scoreGreaterThan10 = result.score > 10;
         expect(recommendationRepository.findAll).toHaveBeenCalled();
         expect(scoreGreaterThan10).toBe(true);
@@ -221,13 +212,11 @@ describe('Obtem recomendações todas com score>10 ou todas com score<=10', () =
 
     it ('Retorna recomendação com score entre -5 e 10', async () => {
         const recommendations = await listWithScoreBetweenNegative5And10()
-        console.log(recommendations)
         jest.spyOn(recommendationRepository, "findAll").mockImplementation((): any => { 
             return recommendations;
         }
         );
         const result = await recommendationService.getRandom();
-        console.log(result)
         const scoreBetweenNegative5And10 = result.score <= 10 && result.score >= -5;
         expect(recommendationRepository.findAll).toHaveBeenCalled();
         expect(scoreBetweenNegative5And10).toBe(true);
@@ -236,8 +225,7 @@ describe('Obtem recomendações todas com score>10 ou todas com score<=10', () =
     it ('Retorna recomendação com score entre -5 e 10', async () => {
         jest.spyOn(recommendationRepository, "findAll").mockImplementation((): any => { 
             return []
-        }
-        );
+        });
         const result = recommendationService.getRandom();
         expect(recommendationRepository.findAll).toHaveBeenCalled();
         expect(result).rejects.toEqual(notFoundError());
