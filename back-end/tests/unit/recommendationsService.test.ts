@@ -106,3 +106,52 @@ describe('Obter recomendação por ID', () => {
         expect(result).rejects.toEqual(notFoundError())
     })
 })
+
+describe('Obtem recomendações ordenados por score', () => {
+    it('deve retornar todas as recomendações ordenadas', async () => {
+        const recommendations = await listOfRecommendations()
+        jest.spyOn(recommendationRepository, "getAmountByScore").mockImplementation((): any => { 
+            const orderedList = orderByScore(recommendations);
+            return returnAmount(orderedList, recommendations.length);
+        });
+        const result = await recommendationService.getTop(recommendations.length);
+        expect(recommendationRepository.getAmountByScore).toHaveBeenCalled();
+        expect(result.length === recommendations.length).toBe(true);            
+        expect(isOrderedByScore(result)).toEqual(true);
+    })
+    it('Recebe um numero maiou que a quantidade de recomendações e deve retorna-las', async () => {
+        const recommendations = await listOfRecommendations()
+        const qtd = recommendations.length + 1;
+        jest.spyOn(recommendationRepository, "getAmountByScore").mockImplementation((): any => { 
+            const ord = orderByScore(recommendations);
+            return returnAmount(ord, qtd);
+        });
+        
+        const result = await recommendationService.getTop(qtd);
+        expect(recommendationRepository.getAmountByScore).toHaveBeenCalled();
+        expect(result.length === recommendations.length).toBe(true);            
+        expect(isOrderedByScore(result)).toEqual(true);
+    })
+})
+
+function isOrderedByScore ( array: Recommendation[] ): boolean {
+    for (let i = 0; i < array.length - 1; i++) {
+        if (array[i].score < array[i + 1].score) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function orderByScore (array: Recommendation[]): Recommendation[] {
+    return array.sort((a, b) => {
+        return b.score - a.score;
+    });
+}
+
+function returnAmount (array: Recommendation[], amount: number): Recommendation[] {
+    if (array.length < amount) {
+        return array;
+    }
+    return array.slice(0, amount);
+}
