@@ -6,7 +6,7 @@ import { prisma } from "../../src/database.js"
 import { recommendationRepository }  from "../../src/repositories/recommendationRepository.js"
 import { CreateRecommendationData, recommendationService } from "../../src/services/recommendationsService.js"
 import { notFoundError } from "../../src/utils/errorUtils.js"
-import { listOfRecommendations, recommendationExemple } from "./factories/recommendationsFactory.js"
+import { listOfRecommendations, recommendationExemple, listWithScoreGreaterThan10, listWithScoreBetweenNegative5And10 } from "./factories/recommendationsFactory.js"
 
 jest.mock("../../src/repositories/recommendationRepository")
 
@@ -126,13 +126,101 @@ describe('Obtem recomendações ordenados por score', () => {
             const ord = orderByScore(recommendations);
             return returnAmount(ord, qtd);
         });
-        
         const result = await recommendationService.getTop(qtd);
         expect(recommendationRepository.getAmountByScore).toHaveBeenCalled();
         expect(result.length === recommendations.length).toBe(true);            
         expect(isOrderedByScore(result)).toEqual(true);
     })
 })
+
+describe('Obtem recomendação aleatória > 70%', () => {
+    beforeEach(() => {
+        jest.spyOn(Math, "random").mockImplementation((): any => { 
+            return 0.70;
+        });
+    })
+    it ('Retorna recomendação com score > 0', async () => {
+        const recommendations = await listOfRecommendations()
+        const recommendationsGreaterThan10 = recommendations.filter(r => r.score > 10);
+        jest.spyOn(recommendationRepository, "findAll").mockImplementation((): any => { 
+            return recommendationsGreaterThan10;
+        }
+        );
+        const result = await recommendationService.getRandom();
+        const resultIsInRecommendations = recommendationsGreaterThan10.some(r => r.id === result.id);
+        const resultScoreIsGreaterThan10 = result.score > 10;
+        expect(recommendationRepository.findAll).toHaveBeenCalled();
+        expect(resultIsInRecommendations).toBe(true);
+        expect(resultScoreIsGreaterThan10).toBe(true);
+    })
+})
+
+describe('Obtem recomendação aleatória < 70%', () => {
+    beforeEach(() => {
+        jest.spyOn(Math, "random").mockImplementation((): any => { 
+            return 0.30;
+        });
+    })
+    it ('Retorna recomendação com score entre -5 e 10', async () => {
+        const recommendations = await listOfRecommendations()
+        const recommendationsLesserThan10 = recommendations.filter(r => r.score < 10 && r.score>-5);
+        jest.spyOn(recommendationRepository, "findAll").mockImplementation((): any => { 
+            return recommendationsLesserThan10;
+        }
+        );
+        const result = await recommendationService.getRandom();
+        const resultIsInRecommendations = recommendationsLesserThan10.some(r => r.id === result.id);
+        const scoreBetweenNegative5And10 = result.score < 10 && result.score > -5;
+        expect(recommendationRepository.findAll).toHaveBeenCalled();
+        expect(resultIsInRecommendations).toBe(true);
+        expect(scoreBetweenNegative5And10).toBe(true);
+    })
+})
+
+describe('Obtem recomendações todas com score>10 ou todas com score<=10', () => {
+    beforeEach(() => {
+        jest.spyOn(Math, "random").mockImplementation((): any => { 
+            return 0.9999
+        });
+    })
+    it ('Retorna recomendação com score > 10', async () => {
+        const recommendations = await listWithScoreGreaterThan10()
+        console.log(recommendations)
+        jest.spyOn(recommendationRepository, "findAll").mockImplementation((): any => { 
+            return recommendations;
+        });
+        const result = await recommendationService.getRandom();
+        console.log(result)
+        const scoreGreaterThan10 = result.score > 10;
+        expect(recommendationRepository.findAll).toHaveBeenCalled();
+        expect(scoreGreaterThan10).toBe(true);
+    })
+
+    it ('Retorna recomendação com score entre -5 e 10', async () => {
+        const recommendations = await listWithScoreBetweenNegative5And10()
+        console.log(recommendations)
+        jest.spyOn(recommendationRepository, "findAll").mockImplementation((): any => { 
+            return recommendations;
+        }
+        );
+        const result = await recommendationService.getRandom();
+        console.log(result)
+        const scoreBetweenNegative5And10 = result.score <= 10 && result.score >= -5;
+        expect(recommendationRepository.findAll).toHaveBeenCalled();
+        expect(scoreBetweenNegative5And10).toBe(true);
+    })
+
+    it ('Retorna recomendação com score entre -5 e 10', async () => {
+        jest.spyOn(recommendationRepository, "findAll").mockImplementation((): any => { 
+            return []
+        }
+        );
+        const result = recommendationService.getRandom();
+        expect(recommendationRepository.findAll).toHaveBeenCalled();
+        expect(result).rejects.toEqual(notFoundError());
+    })
+})
+
 
 function isOrderedByScore ( array: Recommendation[] ): boolean {
     for (let i = 0; i < array.length - 1; i++) {
