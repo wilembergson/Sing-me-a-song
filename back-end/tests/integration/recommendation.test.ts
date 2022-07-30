@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker"
 import supertest from "supertest"
 
-import app from "../src/app.js"
+import app from "../../src/app.js"
 import { create10Recommendations, createDataRecommendation, createRecommendation, createRecommendationWithoutLink, createRecommendationWithoutName, createRecommendationWithoutYoutubeLink, deleteAll, findById, getExistingRecommendation, lessFiveRecomendation, orderedRecommendations } from "./factories/recommendationFactory.js"
 
 const agent = supertest(app)

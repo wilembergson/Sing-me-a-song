@@ -7,7 +7,13 @@
   "scripts": {
     "prisma-test": "dotenv -e .env.test prisma migrate reset --skip-seed",
     "test": "NODE_OPTIONS=--experimental-vm-modules dotenv -e .env.test jest -i",
+    "prisma:reset": "prisma migrate reset",
+    "prisma:migrate": "prisma migrate dev",
+    "test:unit": "NODE_OPTIONS=--experimental-vm-modules dotenv -e .env.test jest -- -i --coverage --testPathPattern=tests/unit",
     "dev": "nodemon src/server.ts"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
